@@ -39,7 +39,6 @@ def render_perkategori_tab(fetch_data, get_zona):
 
         grouped_data = data.groupby("subkelompok")["jumlah_pelanggan"].sum().reset_index()
         top_subkelompok = grouped_data.sort_values(by="jumlah_pelanggan", ascending=False).head(5)
-        top_subkelompok = top_subkelompok.sort_values(by="jumlah_pelanggan", ascending=True)
 
         monthly_totals = filtered_data.groupby('THBL')['jumlah_pelanggan'].sum().reset_index()
         monthly_totals['delta'] = monthly_totals['jumlah_pelanggan'].diff()
@@ -49,11 +48,8 @@ def render_perkategori_tab(fetch_data, get_zona):
             st.markdown("### Analisa:")
             if pd.notnull(max_lonjakan['delta']) and max_lonjakan['delta'] > 0:
                 st.markdown(f"""
-                    Lonjakan keterlambatan tertinggi terjadi pada bulan **{max_lonjakan['THBL']}**, dengan peningkatan sebanyak **+{int(max_lonjakan['delta'])} pelanggan** dibanding bulan sebelumnya.
+                    - Lonjakan keterlambatan tertinggi terjadi pada bulan **{max_lonjakan['THBL']}**, dengan peningkatan sebanyak **+{int(max_lonjakan['delta'])} pelanggan** dibanding bulan sebelumnya.
                     - Subkelompok dengan pelanggan terlambat terbanyak adalah **{top_subkelompok.iloc[0]['subkelompok']}** dengan **{int(top_subkelompok.iloc[0]['jumlah_pelanggan'])} pelanggan**
-                    - Diikuti oleh:  
-                        - **{top_subkelompok.iloc[1]['subkelompok']}**: {int(top_subkelompok.iloc[1]['jumlah_pelanggan'])} pelanggan  
-                        - **{top_subkelompok.iloc[2]['subkelompok']}**: {int(top_subkelompok.iloc[2]['jumlah_pelanggan'])} pelanggan
                 """)
             else:
                 st.markdown("Tidak ditemukan lonjakan signifikan pada periode yang dipilih.")
@@ -108,11 +104,8 @@ def render_perkategori_tab(fetch_data, get_zona):
             st.markdown("**Analisa zona:**")
             if pd.notnull(max_lonjakan['delta']) and max_lonjakan['delta'] > 0:
                 st.markdown(f"""
-                    Lonjakan keterlambatan tertinggi terjadi pada bulan **{max_lonjakan['thbl']}**, dengan peningkatan sebanyak **+{int(max_lonjakan['delta'])} pelanggan** dibanding bulan sebelumnya.
-                    - **Zona {top_zona.iloc[0]['zona']}**: **{int(top_zona.iloc[0]['jumlah_pelanggan'])} pelanggan terlambat**
-                    - Diikuti oleh:  
-                        - **Zona {top_zona.iloc[1]['zona']}**: {int(top_zona.iloc[1]['jumlah_pelanggan'])} pelanggan  
-                        - **Zona {top_zona.iloc[2]['zona']}**: {int(top_zona.iloc[2]['jumlah_pelanggan'])} pelanggan
+                    - Lonjakan keterlambatan tertinggi terjadi pada bulan **{max_lonjakan['thbl']}**, dengan peningkatan sebanyak **+{int(max_lonjakan['delta'])} pelanggan** dibanding bulan sebelumnya.
+                    - Zona dengan pelanggan terlambat terbanyak ada di **Zona {top_zona.iloc[0]['zona']}**: **{int(top_zona.iloc[0]['jumlah_pelanggan'])} pelanggan terlambat**
                 """)
 
     with col4:

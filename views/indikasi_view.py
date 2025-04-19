@@ -73,16 +73,17 @@ def show():
                     y='jumlah_pelanggan',
                     color='zona',
                     markers=True,
-                    title='Jumlah Pelanggan Belum Bayar per Zona dan Jumlah Bulan'
+                    title= None
                 )
                 fig.update_layout(
+                    height=500,
                     xaxis_title='Jumlah Bulan Menunggak',
                     yaxis_title='Jumlah Pelanggan',
                     legend_title='Zona',
                     hovermode='x unified',
                     yaxis=dict(
                         tickmode='linear',
-                        dtick=30 
+                        dtick=50 
                     )
                 )
 
@@ -136,16 +137,17 @@ def show():
                     y='jumlah_pelanggan',
                     color='subkelompok',
                     markers=True,
-                    title='Jumlah Pelanggan Belum Bayar per Subkelompok dan Jumlah Bulan'
+                    title= None
                 )
                 fig2.update_layout(
+                    height=500,
                     xaxis_title='Jumlah Bulan Menunggak',
                     yaxis_title='Jumlah Pelanggan',
                     legend_title='Subkelompok',
                     hovermode='x unified',
                     yaxis=dict(
                         tickmode='linear',
-                        dtick=30
+                        dtick=50
                     )
                 )
 
@@ -158,8 +160,6 @@ def show():
 
                     sub_nama = sub_tertinggi['subkelompok']
                     jumlah_sub = sub_tertinggi['jumlah_pelanggan']
-
-                    st.markdown("### 📊 Insight Subkelompok (Fokus Tunggakan Terlama)")
                     st.markdown(f"""
                         ⏰ Tunggakan terlama yang tercatat adalah selama **{max_bulan_sub} bulan**.
 

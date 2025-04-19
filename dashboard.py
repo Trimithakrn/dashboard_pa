@@ -10,6 +10,7 @@ st.set_page_config(page_title="PDAM Dashboard", layout="wide")
 
 # Sidebar navigation menu
 with st.sidebar:
+    st.markdown("## Analisis Tagihan Pembayaran PDAM Surya Sembada")
     selected = option_menu(
         menu_title="Menu",
         options=[

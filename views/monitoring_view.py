@@ -20,7 +20,9 @@ def show():
         thbl_options = get_thbl_options()
 
         if thbl_options:
-            selected_thbl = st.selectbox("Pilih Bulan-Tahun (thbl):", thbl_options)
+            # Mengurutkan dari terbesar ke terkecil
+            thbl_options_sorted = sorted(thbl_options, reverse=True)
+            selected_thbl = st.selectbox("Pilih Bulan-Tahun (thbl):", thbl_options_sorted)
 
             response = requests.get(f"http://localhost:5000/get_prediksi_thbl?thbl={selected_thbl}")
             if response.status_code == 200:
@@ -47,12 +49,14 @@ def show():
                         st.plotly_chart(fig_sub, use_container_width=True)
 
                     if not zone_counts.empty and not subkelompok_counts.empty:
+                        total_no_plg = df["no_plg"].count()
                         top_zona = zone_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
                         top_sub = subkelompok_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
                         st.markdown(f"""
-                        ### Analisa untuk {selected_thbl}
-                        - Zona terbanyak: **Zona {top_zona['zona']}** ({top_zona['Jumlah Pelanggan']} pelanggan)
-                        - Subkelompok terbanyak: **{top_sub['subkelompok']}** ({top_sub['Jumlah Pelanggan']} pelanggan)
+                        **Analisa untuk {selected_thbl}**
+                        - **{total_no_plg} pelanggan** diprediksi akan **Terlambat**
+                        - Zona yang diprediksi terlambat terbanyak : **Zona {top_zona['zona']}** ({top_zona['Jumlah Pelanggan']} pelanggan)
+                        - Subkelompok yang diprediksi terlambat terbanyak: **{top_sub['subkelompok']}** ({top_sub['Jumlah Pelanggan']} pelanggan)
                         """)
 
                 else:
@@ -145,19 +149,43 @@ def show():
                     fig.update_layout(xaxis=dict(type="category"))
                     st.plotly_chart(fig, use_container_width=True)
 
+                    # Analisa pelanggan yang belum bayar lebih dari 1 bulan
+                    if "no_plg" in df.columns and "status" in df.columns and "thbl" in df.columns:
+                        # Urutkan berdasarkan pelanggan dan bulan
+                        df_sorted = df.sort_values(by=["no_plg", "thbl"])
+                        
+                        # Tandai baris dengan status "Belum Dibayar"
+                        df_sorted["belum_bayar"] = (df_sorted["status"] == "Belum Dibayar").astype(int)
+
+                        # Hitung streak keterlambatan berturut-turut per pelanggan
+                        result = []
+                        for no_plg, group in df_sorted.groupby("no_plg"):
+                            count = 0
+                            max_count = 0
+                            bulan_terakhir = ""
+                            for _, row in group.iterrows():
+                                if row["belum_bayar"] == 1:
+                                    count += 1
+                                    bulan_terakhir = row["thbl"]
+                                else:
+                                    if count > max_count:
+                                        max_count = count
+                                    count = 0
+                            if count > max_count:
+                                max_count = count
+                            if max_count > 1:
+                                result.append((no_plg, max_count, bulan_terakhir))
+
                     if not avg_df.empty:
                         last_row = avg_df.iloc[-1]
-                        bulan_terakhir = last_row["thbl"]
-                        nilai_aktual = last_row["selisih_hari"]
                         nilai_prediksi = last_row["prediksi_selisih"]
-                        status_aktual = "tepat waktu" if nilai_aktual < 15 else "terlambat"
                         status_prediksi = "tepat waktu" if nilai_prediksi < 15 else "terlambat"
 
                         st.markdown("### 🔍 Analisa Pembayaran per Bulan")
                         st.markdown(f"""
-                        - Bulan **{bulan_terakhir}**, rata-rata aktual: **{nilai_aktual:.1f} hari** (**{status_aktual}**)
-                        - Prediksi bulan berikutnya: **{nilai_prediksi:.1f} hari** (**{status_prediksi}**)
-                        - Pola pelanggan {no_plg}: **{status_prediksi}**
+                        - Pada bulan selanjutnya, pelanggan diprediksi akan **{status_prediksi}** dalam melakukan pembayaran.
                         """)
+                        for no_plg, bulan, terakhir in result:
+                            st.markdown(f"- Pelanggan `{no_plg}` belum membayar selama **{bulan} bulan berturut-turut**, terakhir pada `{terakhir}`.")
             else:
                 st.error("❌ Data tidak ditemukan atau terjadi kesalahan.")
