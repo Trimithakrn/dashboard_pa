@@ -1,0 +1,5 @@
+flask
+streamlit
+psycopg2
+requests
+pandas
