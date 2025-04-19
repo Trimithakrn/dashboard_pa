@@ -29,7 +29,7 @@ with st.sidebar:
                 "margin": "0px",
             },
             "nav-link-selected": {
-                "background-color": "grey",
+                "background-color": "#FD706E",
                 "color": "white"
             },
         }
