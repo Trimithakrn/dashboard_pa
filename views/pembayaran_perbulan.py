@@ -1,9 +1,16 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+import locale
 
 def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
     selected_month = st.text_input("📅 Masukkan Kode Bulan (YYYYMM)", value="202401")
+    # Set locale ke Indonesia
+    locale.setlocale(locale.LC_ALL, 'id_ID.UTF-8')
+
+    # Fungsi untuk memformat angka ke format Rupiah
+    def format_rupiah(angka):
+        return locale.currency(angka, grouping=True)
 
     if selected_month:
         summary_data = get_summary(selected_month)
@@ -21,6 +28,7 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 data['zona'] = data['zona'].astype(str)
                 status_counts = data.groupby(['zona', 'status']).size().reset_index(name='Counts')
                 data['kerugian'] = data['rp_tagihan'].where(data['status'] == 'Belum Dibayar', 0)
+                total_kerugian = data['kerugian'].sum()
                 kerugian_per_zona = data.groupby('zona')['kerugian'].sum().reset_index()
                 status_counts = status_counts.merge(kerugian_per_zona, on="zona", how="left")
                 zona_sorted = sorted(status_counts['zona'].unique(), key=lambda x: int(x) if x.isdigit() else x)
@@ -70,8 +78,8 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 st.markdown("### Analisa Wilayah:")
                 st.markdown(f"""
                 - 📊 Dominasi status: **{status_dominan}**. {generateDetailDesc(status_dominan)}
-                - ⏰ Total keterlambatan: **{int(total_terlambat)} pelanggan**, terutama di Zona **{zona_terlambat_nama}** (**{int(zona_terlambat_jumlah)} pelanggan**).
-                - 💸 Belum membayar: **{int(total_belum_bayar)} pelanggan**
+                - ⏰ Total keterlambatan: **{int(total_terlambat)} pelanggan**, terutama di Zona **{zona_terlambat_nama} sebanyak {int(zona_terlambat_jumlah)} pelanggan**.
+                - 💸 Belum membayar: **{int(total_belum_bayar)} pelanggan**. Dengan nominal **{format_rupiah(total_kerugian)}**.
                 """)
 
                 # Pastikan kolom SUBKELOMPOK dalam format string
@@ -135,9 +143,9 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 # Tampilkan analisis otomatis berdasarkan subkelompok
                 st.markdown("### Analisa Subkelompok:")
                 st.markdown(f"""
-                - 📊 Dari grafik status pembayaran per subkelompok, sistem mendeteksi dominasi status pembayaran **{sub_status_dominan}**, yang menunjukkan pola perilaku pembayaran yang khas di beberapa kategori pelanggan.
-                - ⏰ Tercatat sebanyak **{int(sub_total_terlambat)} pelanggan mengalami keterlambatan pembayaran**, dengan jumlah terbanyak berasal dari **Subkelompok {sub_terlambat_nama}** sebanyak **{int(sub_terlambat_jumlah)} pelanggan**.
-                - 💸 Selain itu, terdapat **{int(sub_total_belum_bayar)} pelanggan yang belum membayar** tagihan mereka.
+                - 📊 Dominasi status: **{status_dominan}**. {generateDetailDesc(status_dominan)}
+                - ⏰ Total keterlambatan : **{int(sub_total_terlambat)}** yang berasal dari Subkelompok **{sub_terlambat_nama}** sebanyak **{int(sub_terlambat_jumlah)} pelanggan**.
+                - 💸 Belum Membayar : **{int(sub_total_belum_bayar)} pelanggan**. Dengan nominal **{format_rupiah(total_kerugian)}**.
                 """)
 
             with col5:
