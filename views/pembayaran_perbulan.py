@@ -34,13 +34,14 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 zona_sorted = sorted(status_counts['zona'].unique(), key=lambda x: int(x) if x.isdigit() else x)
                 if len(zona_sorted) > 30:
                     zona_sorted = zona_sorted[::2]
-
+                st.markdown("### Persebaran Per Zona")
+                st.markdown(f'**Grafik distribusi pembayaran per zona**')
                 fig1 = px.bar(
                     status_counts,
                     x='zona', y='Counts', color='status',
                     color_discrete_map={'Terlambat': 'brown', 'Tepat Waktu': 'skyblue', 'Belum Dibayar': 'red'},
-                    title="Grafik Wilayah Pelanggan (Jumlah)",
                     labels={'zona': 'Zona', 'Counts': 'Jumlah Pelanggan'},
+                    title= None,
                     hover_data={'Counts': ':,.0f', 'kerugian': ':,.0f'},
                     category_orders={"zona": zona_sorted}
                 )
@@ -75,7 +76,7 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
 
                 total_belum_bayar = status_total[status_total['status'] == 'Belum Dibayar']['Counts'].values[0] if 'Belum Dibayar' in status_total['status'].values else 0
 
-                st.markdown("### Analisa Wilayah:")
+                st.markdown("**Hasil analisis grafik pembayaran zona:**")
                 st.markdown(f"""
                 - 📊 Dominasi status: **{status_dominan}**. {generateDetailDesc(status_dominan)}
                 - ⏰ Total keterlambatan: **{int(total_terlambat)} pelanggan**, terutama di Zona **{zona_terlambat_nama} sebanyak {int(zona_terlambat_jumlah)} pelanggan**.
@@ -84,20 +85,19 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
 
                 # Pastikan kolom SUBKELOMPOK dalam format string
                 data['subkelompok'] = data['subkelompok'].astype(str)
-
                 # Hitung jumlah pelanggan per SUBKELOMPOK dan Status
                 subkelompok_counts = data.groupby(['subkelompok', 'status']).size().reset_index(name='Counts')
-
                 # Urutkan SUBKELOMPOK agar tampilan lebih rapi
                 subkelompok_sorted = sorted(subkelompok_counts['subkelompok'].unique())
-
+                st.markdown("### Persebaran Per Subkelompok")
+                st.markdown(f'**Grafik distribusi per subkelompok**')
                 # Buat grafik batang jumlah pelanggan per SUBKELOMPOK
                 fig2 = px.bar(
                     subkelompok_counts,
                     x='subkelompok',
                     y='Counts',
                     color='status',
-                    title="Grafik Status Pembayaran per SUBKELOMPOK",
+                    title=None,
                     labels={'subkelompok': 'Subkelompok', 'Counts': 'Jumlah Pelanggan'},
                     color_discrete_map={'Terlambat': 'brown', 'Tepat Waktu': 'skyblue', 'Belum Dibayar': 'red'},
                     category_orders={"subkelompok": subkelompok_sorted}  # Menjaga urutan SUBKELOMPOK
@@ -120,10 +120,8 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
 
                 # Hitung total pelanggan per status di semua subkelompok
                 sub_status_total = subkelompok_counts.groupby('status')['Counts'].sum().reset_index()
-
                 # Ambil status dominan secara keseluruhan
                 sub_status_dominan = sub_status_total.loc[sub_status_total['Counts'].idxmax(), 'status']
-
                 # Total pelanggan Terlambat
                 sub_total_terlambat = sub_status_total[sub_status_total['status'] == 'Terlambat']['Counts'].values[0] if 'Terlambat' in sub_status_total['status'].values else 0
 
@@ -141,21 +139,22 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 sub_total_belum_bayar = sub_status_total[sub_status_total['status'] == 'Belum Dibayar']['Counts'].values[0] if 'Belum Dibayar' in sub_status_total['status'].values else 0
 
                 # Tampilkan analisis otomatis berdasarkan subkelompok
-                st.markdown("### Analisa Subkelompok:")
+                st.markdown("**Hasil analisis pembayaran per subkelompok**")
                 st.markdown(f"""
-                - 📊 Dominasi status: **{status_dominan}**. {generateDetailDesc(status_dominan)}
+                - 📊 Dominasi status: **{sub_status_dominan}**. {generateDetailDesc(sub_status_dominan)}
                 - ⏰ Total keterlambatan : **{int(sub_total_terlambat)}** yang berasal dari Subkelompok **{sub_terlambat_nama}** sebanyak **{int(sub_terlambat_jumlah)} pelanggan**.
                 - 💸 Belum Membayar : **{int(sub_total_belum_bayar)} pelanggan**. Dengan nominal **{format_rupiah(total_kerugian)}**.
                 """)
 
             with col5:
                 # Pie Chart
+                st.markdown('### Status Pembayaran')
+                st.markdown(f'**Grafik status pembayaran pada bulan {selected_month}**')
                 status_counts = data.groupby('status')['no_plg'].nunique().reset_index()
                 status_counts.columns = ['status', 'Jumlah Pelanggan']
 
                 fig2 = px.pie(
-                    status_counts, names='status', values='Jumlah Pelanggan',
-                    title="Status Pembayaran", color='status',
+                    status_counts, names='status', values='Jumlah Pelanggan', color='status',
                     color_discrete_map={'Terlambat': 'brown', 'Tepat Waktu': 'skyblue'}
                 )
                 fig2.update_traces(textinfo='percent+label')
@@ -171,7 +170,7 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 jml_tepat = int(tepat_row['Jumlah Pelanggan'].values[0]) if not tepat_row.empty else 0
                 persen_tepat = float(tepat_row['Persentase'].values[0]) if not tepat_row.empty else 0
 
-                st.markdown("### Analisa Status Pembayaran:")
+                st.markdown("**Hasil analisis grafik status pembayaran:**")
                 st.markdown(f"""
                 - 📈 Tepat waktu: **{jml_tepat} pelanggan ({persen_tepat:.2f}%)**
                 - 🔴 Terlambat: **{jml_terlambat} pelanggan ({persen_terlambat:.2f}%)**
@@ -179,17 +178,19 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 """)
 
                 # Tren Bulanan
+                st.markdown('### Tren Status Pembayaran')
+                st.markdown(f'**Tren jumlah pelanggan setiap bulan**')
                 summary_df = get_summary_thbl()
                 summary_df["thbl"] = summary_df["thbl"].astype(str).apply(lambda x: f"{x[:4]}-{x[4:]}")
                 for col in ["tepat_waktu", "terlambat", "belum_dibayar"]:
                     summary_df[col] = pd.to_numeric(summary_df[col])
-
+                
                 fig4 = px.line(
                     summary_df.melt(id_vars=["thbl"], var_name="Status", value_name="Jumlah"),
                     x="thbl", y="Jumlah", color="Status",
-                    title="Tren Jumlah Pelanggan Berdasarkan Status Pembayaran",
+                    title=None,
                     markers=True,
-                    color_discrete_map={'Terlambat': 'brown', 'Tepat Waktu': 'skyblue', 'Belum Dibayar': 'red'}
+                    color_discrete_map={'terlambat': 'brown', 'tepat_waktu': 'skyblue', 'belum_dibayar': 'red'}
                 )
                 fig4.update_layout(
                     width=900, height=600,
@@ -207,7 +208,6 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
 
                 persen_tepat = (avg_tepat / total_avg) * 100 if total_avg > 0 else 0
                 persen_terlambat = (avg_terlambat / total_avg) * 100 if total_avg > 0 else 0
-                persen_belum_dibayar = (avg_belum_dibayar / total_avg) * 100 if total_avg > 0 else 0
 
                 if len(summary_df) >= 2:
                     latest_tepat = summary_df["tepat_waktu"].iloc[-1]
@@ -216,12 +216,14 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 else:
                     tren_tepat = "tidak cukup data untuk tren"
 
-                st.markdown("### Analisa Tren per-Bulan:")
+                summary_df["terlambat_lebih_banyak"] = summary_df["terlambat"] > summary_df["tepat_waktu"]
+                bulan_banyak_terlambat = summary_df[summary_df["terlambat_lebih_banyak"]]["thbl"].tolist()
+                # Tampilkan analisa
+                st.markdown("**Analisa tren perbulan :**")
                 st.markdown(f"""
-                - 📊 Rata-rata pelanggan tepat waktu: **{avg_tepat:.0f} ({persen_tepat:.2f}%)**
-                - ⏰ Terlambat: **{avg_terlambat:.0f} ({persen_terlambat:.2f}%)**
-                - 💸 Belum membayar: **{avg_belum_dibayar:.0f} ({persen_belum_dibayar:.2f}%)**
                 - ✅ Tren pembayaran tepat waktu: **{tren_tepat}**
+                - 🔴 Jumlah pelanggan yang **terlambat** lebih tinggi dari yang **tepat waktu** pada bulan **{bulan_banyak_terlambat}**
                 """)
+
         else:
             st.warning(f"⚠️ Tidak ada data untuk bulan {selected_month}.")

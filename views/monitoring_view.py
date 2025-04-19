@@ -5,7 +5,6 @@ import plotly.express as px
 from datetime import datetime
 
 def show():
-    st.title("Layanan Monitoring Pelanggan")
     tab1, tab2 = st.tabs([
         "Pelanggan Potensial Terlambat Bayar", 
         "Monitoring Tagihan Pelanggan PDAM Surya Sembada Kota Surabaya"

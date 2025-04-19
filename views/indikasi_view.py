@@ -24,7 +24,6 @@ def get_pelanggan_belum_bayar_data(api_url="http://localhost:5000/api/pelanggan_
         return pd.DataFrame()
 
 def show():
-    st.title("Indikasi Pelanggan Terlambat")
     df_belum_bayar = get_pelanggan_belum_bayar_data()
 
     # Tabs for different views

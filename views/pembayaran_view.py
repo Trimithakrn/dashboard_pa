@@ -62,7 +62,6 @@ def get_zona():
         return pd.DataFrame()
 
 def show():
-    st.title("Dashboard Pola Pembayaran Pelanggan PDAM Surya Sembada")
     tab1, tab2 = st.tabs(["Pola Pembayaran per Bulan", "Pola Pembayaran per Kategori"])
 
     with tab1:
