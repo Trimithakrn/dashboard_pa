@@ -17,25 +17,54 @@ def render_perkategori_tab(fetch_data, get_zona):
     col1, col2 = st.columns(2)
 
     with col1:
+        # Buat daftar subkelompok
         subkelompok_list = data['subkelompok'].unique().tolist()
         subkelompok_list.insert(0, "Semua Subkelompok")
+        # Buat daftar THBL dan urutkan
+        THBL_list = sorted(data['THBL'].unique().tolist())
+        THBL_list.insert(0, "Semua THBL")
+
         selected_subkelompok = st.multiselect(
-            "🔍 Pilih SUBKELOMPOK:",
+            "🔍 Pilih Subkelompok",
             subkelompok_list,
             default=["Semua Subkelompok"]
         )
+        selected_THBL = st.multiselect(
+            "🔍 Pilih Tahun - Bulan",
+            THBL_list,
+            default=["Semua THBL"]
+        )
 
-        filtered_data = data if "Semua Subkelompok" in selected_subkelompok else data[data['subkelompok'].isin(selected_subkelompok)]
+        # Filter data berdasarkan pilihan
+        filtered_data = data.copy()
+
+        if "Semua Subkelompok" not in selected_subkelompok:
+            filtered_data = filtered_data[filtered_data['subkelompok'].isin(selected_subkelompok)]
+
+        if "Semua THBL" not in selected_THBL:
+            filtered_data = filtered_data[filtered_data['THBL'].isin(selected_THBL)]
+
+        # Pastikan THBL diurutkan sebagai kategori agar sumbu X rapi
+        filtered_data['THBL'] = pd.Categorical(filtered_data['THBL'], categories=sorted(data['THBL'].unique()), ordered=True)
+
+        # Buat grafik
         fig5 = px.line(
-            filtered_data,
+            filtered_data.sort_values('THBL'),  # Sort berdasarkan THBL
             x='THBL',
             y='jumlah_pelanggan',
             color='subkelompok',
             markers=True,
             title=None,
-            labels={'THBL': 'Periode THBL', 'jumlah_pelanggan': 'Jumlah Pelanggan Terlambat', 'subkelompok': 'Subkelompok'}
+            labels={
+                'THBL': 'Periode THBL',
+                'jumlah_pelanggan': 'Jumlah Pelanggan Terlambat',
+                'subkelompok': 'Subkelompok'
+            }
         )
+
+        # Tampilkan grafik
         st.plotly_chart(fig5, use_container_width=True)
+
 
         grouped_data = data.groupby("subkelompok")["jumlah_pelanggan"].sum().reset_index()
         top_subkelompok = grouped_data.sort_values(by="jumlah_pelanggan", ascending=False).head(5)
@@ -70,26 +99,67 @@ def render_perkategori_tab(fetch_data, get_zona):
         st.plotly_chart(fig6, use_container_width=True)
 
     data = get_zona()
+    data['thbl'] = data['thbl'].astype(str)
+    data['thbl'] = data['thbl'].str[:4] + "-" + data['thbl'].str[4:]
+    data = data.sort_values(by='thbl')
     col3, col4 = st.columns(2)
+
     with col3:
+        # Buat daftar zona
         zona_list = data['zona'].unique().tolist()
         zona_list.insert(0, "Semua zona")
-        st.markdown('### 📉 Tren Jumlah Pelanggan Terlambat per zona')
+
+        # Buat daftar THBL dan urutkan
+        THBL_list = sorted(data['thbl'].unique().tolist())
+        THBL_list.insert(0, "Semua THBL")
+
+        # Judul dan filter
+        st.markdown('### 📉 Tren Jumlah Pelanggan Terlambat per Zona')
+
         selected_zona = st.multiselect(
             "🔍 Pilih zona:",
             zona_list,
             default=["Semua zona"]
         )
-        filtered_data = data if "Semua zona" in selected_zona else data[data['zona'].isin(selected_zona)]
+
+        selected_THBL = st.multiselect(
+            "🔍 Pilih THBL:",
+            THBL_list,
+            default=["Semua THBL"]
+        )
+
+        # Filter data
+        filtered_data = data.copy()
+
+        if "Semua zona" not in selected_zona:
+            filtered_data = filtered_data[filtered_data['zona'].isin(selected_zona)]
+
+        if "Semua THBL" not in selected_THBL:
+            filtered_data = filtered_data[filtered_data['thbl'].isin(selected_THBL)]
+
+        # Urutkan sumbu X (thbl) agar tampil rapi
+        filtered_data['thbl'] = pd.Categorical(
+            filtered_data['thbl'],
+            categories=sorted(data['thbl'].unique()),
+            ordered=True
+        )
+
+        # Buat grafik
         fig7 = px.line(
-            filtered_data,
+            filtered_data.sort_values('thbl'),
             x='thbl',
             y='jumlah_pelanggan',
             color='zona',
             markers=True,
-            title= None,
-            labels={'thbl': 'Periode THBL', 'jumlah_pelanggan': 'Jumlah Pelanggan Terlambat', 'zona': 'zona'}
+            title=None,
+            labels={
+                'thbl': 'Periode THBL',
+                'jumlah_pelanggan': 'Jumlah Pelanggan Terlambat',
+                'zona': 'Zona'
+            }
         )
+
+        # Tampilkan grafik
         st.plotly_chart(fig7, use_container_width=True)
 
         grouped_data = data.groupby("zona")["jumlah_pelanggan"].sum().reset_index()
