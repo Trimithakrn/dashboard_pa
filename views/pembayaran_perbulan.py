@@ -222,7 +222,7 @@ def render_perbulan_tab(get_summary, get_data, get_summary_thbl):
                 st.markdown("**Analisa tren perbulan :**")
                 st.markdown(f"""
                 - ✅ Tren pembayaran tepat waktu: **{tren_tepat}**
-                - 🔴 Jumlah pelanggan yang **terlambat** lebih tinggi dari yang **tepat waktu** pada bulan **{bulan_banyak_terlambat}**
+                - 🔴 Pada bulan **{bulan_banyak_terlambat}** mengalami kenaikan angka keterlambatan daripada tepat waktu dalam pelunasan tagihan
                 """)
 
         else:
