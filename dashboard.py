@@ -16,7 +16,7 @@ with st.sidebar:
         options=[
             "Dashboard Pola Pembayaran Pelanggan",
             "Layanan Monitoring Pelanggan",
-            "Indikasi Pelanggan Terlambat"
+            "Pelanggan Belum Membayar Tagihan"
         ],
         icons=["bar-chart", "list-task", "exclamation-triangle"],
         menu_icon="water",
@@ -50,7 +50,7 @@ def show_monitoring_view():
 
 
 def show_indikasi_view():
-    st.title("🚨 Indikasi Pelanggan Terlambat")
+    st.title("🚨 Pelanggan Belum Membayar Tagihan")
     indikasi_view.show()
     # Tambahkan daftar indikasi di sini
 
@@ -61,5 +61,5 @@ if selected == "Dashboard Pola Pembayaran Pelanggan":
 elif selected == "Layanan Monitoring Pelanggan":
     show_monitoring_view()
 
-elif selected == "Indikasi Pelanggan Terlambat":
+elif selected == "Pelanggan Belum Membayar Tagihan":
     show_indikasi_view()
