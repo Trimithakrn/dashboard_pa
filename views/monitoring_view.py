@@ -31,8 +31,18 @@ def show():
                     df = pd.DataFrame(data)
                     df = df[["no_plg", "thbl", "zona", "subkelompok", "prediksi_selisih"]]
                     df = df.sort_values(by="prediksi_selisih", ascending=False)
-                    st.dataframe(df, use_container_width=True)
+                    df_display = df.copy()
+                    df_display.columns = [
+                        "Nomor Pelanggan", 
+                        "Tahun Bulan", 
+                        "Kode Zona", 
+                        "Kategori Pelanggan", 
+                        "Prediksi Selisih Hari Pembayaran"
+                    ]
 
+                    st.dataframe(df_display, use_container_width=True)
+
+                    # Analisis tetap pakai df asli (kolom asli)
                     zone_counts = df.groupby("zona").size().reset_index(name="Jumlah Pelanggan")
                     subkelompok_counts = df.groupby("subkelompok").size().reset_index(name="Jumlah Pelanggan")
 
@@ -94,18 +104,46 @@ def show():
 
         if st.session_state.enter_pressed and no_plg:
             data = get_prediction(no_plg)
-
             if data:
                 df = pd.DataFrame(data)
-                desired_order = [
-                    "thbl", "no_plg", "zona", "kd_tarif", "subkelompok", "periode",
-                    "awal_tagihan", "tgl_lunas", "tgl_tenggat", "rp_tagihan", "status", "selisih_hari", "prediksi_selisih"
-                ]
-                df = df[[col for col in desired_order if col in df.columns]]
-                if "thbl" in df.columns:
-                    df["thbl"] = pd.to_datetime(df["thbl"], format="%Y%m").dt.strftime("%Y-%m")
 
-                df["Status Baru"] = df["status"]
+                df.rename(columns={
+                    "thbl": "Bulan Tahun",
+                    "no_plg": "Nomor Pelanggan",
+                    "zona": "Zona",
+                    "kd_tarif": "Kode Tarif",
+                    "subkelompok": "Subkelompok",
+                    "periode": "Periode",
+                    "awal_tagihan": "Awal Tagihan",
+                    "tgl_lunas": "Tanggal Lunas",
+                    "tgl_tenggat": "Tanggal Tenggat",
+                    "rp_tagihan": "Jumlah Tagihan",
+                    "status": "Status Pembayaran",
+                    "selisih_hari": "Selisih Hari",
+                    "prediksi_selisih": "Prediksi Selisih",
+                    "Status Baru": "Status Baru"
+                }, inplace=True)
+
+                # Format kolom Bulan Tahun
+                df["Bulan Tahun"] = df["Bulan Tahun"].astype(str)
+
+                # Simpan df asli (termasuk Nomor Pelanggan)
+                df_full = df.copy()
+
+                # Buat df_display tanpa kolom Nomor Pelanggan
+                df_display = df.drop(columns=["Nomor Pelanggan"])
+
+                # Atur urutan kolom yang ditampilkan
+                desired_order = [
+                    "Bulan Tahun", "Zona", "Kode Tarif", "Subkelompok", "Periode",
+                    "Awal Tagihan", "Tanggal Lunas", "Tanggal Tenggat", "Jumlah Tagihan",
+                    "Status Pembayaran", "Selisih Hari", "Prediksi Selisih", "Status Baru"
+                ]
+                df_display = df_display[[col for col in desired_order if col in df_display.columns]]
+
+                # Inisialisasi kolom "Status Baru"
+                df_display["Status Baru"] = df_display["Status Pembayaran"]
+
                 column_config = {
                     "Status Baru": st.column_config.SelectboxColumn(
                         "Status Baru",
@@ -114,15 +152,18 @@ def show():
                     )
                 }
 
-                edited_df = st.data_editor(df, column_config=column_config, hide_index=True, use_container_width=True)
-                changes = edited_df[edited_df["Status Baru"] != df["status"]]
+                # Tampilkan editor tanpa kolom No Pelanggan
+                edited_df = st.data_editor(df_display, column_config=column_config, hide_index=True, use_container_width=True)
+                changes = edited_df[edited_df["Status Baru"] != df_display["Status Pembayaran"]]
 
+                # Update jika ada perubahan
                 if not changes.empty:
                     updated_rows = []
                     for index, row in changes.iterrows():
-                        new_tgl_lunas = update_status_in_db(row["no_plg"], row["Status Baru"])
-                        edited_df.at[index, "tgl_lunas"] = new_tgl_lunas
-                        edited_df.at[index, "status"] = row["Status Baru"]
+                        no_plg = df_full.loc[index, "Nomor Pelanggan"]
+                        new_tgl_lunas = update_status_in_db(no_plg, row["Status Baru"])
+                        edited_df.at[index, "Tanggal Lunas"] = new_tgl_lunas
+                        edited_df.at[index, "Status Pembayaran"] = row["Status Baru"]
                         updated_rows.append(edited_df.iloc[index])
 
                     st.success("✅ Data berhasil diperbarui.")
@@ -133,40 +174,48 @@ def show():
                         st.write("### Hasil Pencarian (Hanya Data yang Diperbarui):")
                         st.dataframe(updated_df.style.hide(axis="index"), use_container_width=True)
 
-                if not df.empty and all(col in df.columns for col in ["thbl", "selisih_hari", "prediksi_selisih"]):
-                    avg_df = df.groupby("thbl")[["selisih_hari", "prediksi_selisih"]].mean().reset_index()
+                # Visualisasi jika data ada
+                if not df.empty and all(col in df.columns for col in ["Bulan Tahun", "Selisih Hari", "Prediksi Selisih"]):
+                    avg_df = df.groupby("Bulan Tahun")[["Selisih Hari", "Prediksi Selisih"]].mean().reset_index()
+                    avg_df = avg_df.sort_values("Bulan Tahun")
+
+                    # Long format
+                    df_melt = avg_df.melt(id_vars="Bulan Tahun", value_vars=["Selisih Hari", "Prediksi Selisih"],
+                                        var_name="Tipe", value_name="Jumlah Hari")
 
                     fig = px.line(
-                        avg_df,
-                        x="thbl",
-                        y=["selisih_hari", "prediksi_selisih"],
+                        df_melt,
+                        x="Bulan Tahun",
+                        y="Jumlah Hari",
+                        color="Tipe",
                         markers=True,
-                        labels={"value": "Jumlah Hari", "thbl": "Bulan (YYYY-MM)"},
                         title="📈 Perbandingan Selisih Hari & Prediksi Selisih per Bulan"
                     )
-                    fig.update_traces(line=dict(color="blue"), selector=dict(name="selisih_hari"))
-                    fig.update_traces(line=dict(color="red", dash="dash"), selector=dict(name="prediksi_selisih"))
+                    fig.update_traces(
+                        selector=dict(name="Selisih Hari"),
+                        line=dict(color="blue", dash="solid")
+                    )
+                    fig.update_traces(
+                        selector=dict(name="Prediksi Selisih"),
+                        line=dict(color="red", dash="dot")
+                    )
                     fig.update_layout(xaxis=dict(type="category"))
                     st.plotly_chart(fig, use_container_width=True)
 
-                    # Analisa pelanggan yang belum bayar lebih dari 1 bulan
-                    if "no_plg" in df.columns and "status" in df.columns and "thbl" in df.columns:
-                        # Urutkan berdasarkan pelanggan dan bulan
-                        df_sorted = df.sort_values(by=["no_plg", "thbl"])
-                        
-                        # Tandai baris dengan status "Belum Dibayar"
-                        df_sorted["belum_bayar"] = (df_sorted["status"] == "Belum Dibayar").astype(int)
+                    # Analisa keterlambatan pelanggan
+                    if all(col in df.columns for col in ["Nomor Pelanggan", "Status Pembayaran", "Bulan Tahun"]):
+                        df_sorted = df.sort_values(by=["Nomor Pelanggan", "Bulan Tahun"])
+                        df_sorted["belum_bayar"] = (df_sorted["Status Pembayaran"] == "Belum Dibayar").astype(int)
 
-                        # Hitung streak keterlambatan berturut-turut per pelanggan
                         result = []
-                        for no_plg, group in df_sorted.groupby("no_plg"):
+                        for nomor, group in df_sorted.groupby("Nomor Pelanggan"):
                             count = 0
                             max_count = 0
                             bulan_terakhir = ""
                             for _, row in group.iterrows():
                                 if row["belum_bayar"] == 1:
                                     count += 1
-                                    bulan_terakhir = row["thbl"]
+                                    bulan_terakhir = row["Bulan Tahun"]
                                 else:
                                     if count > max_count:
                                         max_count = count
@@ -174,18 +223,16 @@ def show():
                             if count > max_count:
                                 max_count = count
                             if max_count > 1:
-                                result.append((no_plg, max_count, bulan_terakhir))
+                                result.append((nomor, max_count, bulan_terakhir))
 
-                    if not avg_df.empty:
-                        last_row = avg_df.iloc[-1]
-                        nilai_prediksi = last_row["prediksi_selisih"]
-                        status_prediksi = "tepat waktu" if nilai_prediksi < 15 else "terlambat"
+                        if not avg_df.empty:
+                            last_row = avg_df.iloc[-1]
+                            nilai_prediksi = last_row["Prediksi Selisih"]
+                            status_prediksi = "tepat waktu" if nilai_prediksi < 15 else "terlambat"
 
-                        st.markdown("### 🔍 Analisa Pembayaran per Bulan")
-                        st.markdown(f"""
-                        - Pada bulan selanjutnya, pelanggan diprediksi akan **{status_prediksi}** dalam melakukan pembayaran.
-                        """)
-                        for no_plg, bulan, terakhir in result:
-                            st.markdown(f"- Pelanggan `{no_plg}` belum membayar selama **{bulan} bulan berturut-turut**, terakhir pada `{terakhir}`.")
+                            st.markdown("### 🔍 Analisa Pembayaran per Bulan")
+                            st.markdown(f"- Pada bulan selanjutnya, pelanggan diprediksi akan **{status_prediksi}** dalam melakukan pembayaran.")
+                            for nomor, bulan, terakhir in result:
+                                st.markdown(f"- Pelanggan `{nomor}` belum membayar selama **{bulan} bulan berturut-turut**, terakhir pada `{terakhir}`.")
             else:
                 st.error("❌ Data tidak ditemukan atau terjadi kesalahan.")
