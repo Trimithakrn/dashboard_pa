@@ -31,14 +31,20 @@ def show():
 
     with tab1:
         if not df_belum_bayar.empty:
+            df = pd.DataFrame(df_belum_bayar)
             # Ubah urutan kolom
             urutan_kolom = ["no_plg", "jumlah_bulan", "subkelompok", "zona"]
+            df = df[urutan_kolom]
+            df.rename(columns={
+                "no_plg": "Nomor Pelanggan",
+                "jumlah_bulan": "Jumlah Bulan Berturut-turut",
+                "subkelompok": "Subkelompok",
+                "zona": "Zona"
+            }, inplace=True)
             df_belum_bayar = df_belum_bayar[urutan_kolom]
-            
             # Urutkan berdasarkan jumlah_bulan dari yang terbanyak
             df_belum_bayar = df_belum_bayar.sort_values(by="jumlah_bulan", ascending=False)
-
-            st.dataframe(df_belum_bayar, use_container_width=True, hide_index=True, height=800)
+            st.dataframe(df, use_container_width=True, hide_index=True, height=800)
         else:
             st.warning("Tidak ada data untuk ditampilkan.")
 
