@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import plotly.express as px
 from datetime import datetime
+from PIL import Image
 
 def show():
     tab1, tab2 = st.tabs([
@@ -11,6 +12,32 @@ def show():
     ])
 
     with tab1:
+        # Baca data ikon sebagai gambar
+        icon_person = Image.open("icon/person.png")
+        icon_maps = Image.open("icon/maps.png")
+        icon_people = Image.open("icon/people.png")
+
+        # CSS untuk shadow dan layout
+        st.markdown("""
+            <style>
+            .title {
+                font-size: 16px;
+                font-weight: 500;
+                color: #333333;
+            }
+            .value {
+                font-size: 24px;
+                font-weight: 700;
+                margin-top: 6px;
+            }
+            .desc {
+                font-size: 14px;
+                color: #666666;
+                margin-top: -4px;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
         def get_thbl_options():
             response = requests.get("http://localhost:5000/get_thbl_options")
             if response.status_code == 200:
@@ -20,9 +47,8 @@ def show():
         thbl_options = get_thbl_options()
 
         if thbl_options:
-            # Mengurutkan dari terbesar ke terkecil
             thbl_options_sorted = sorted(thbl_options, reverse=True)
-            selected_thbl = st.selectbox("Pilih Bulan-Tahun (thbl):", thbl_options_sorted)
+            selected_thbl = st.selectbox("Pilih Tahun-Bulan", thbl_options_sorted)
 
             response = requests.get(f"http://localhost:5000/get_prediksi_thbl?thbl={selected_thbl}")
             if response.status_code == 200:
@@ -31,50 +57,94 @@ def show():
                     df = pd.DataFrame(data)
                     df = df[["no_plg", "thbl", "zona", "subkelompok", "prediksi_selisih"]]
                     df = df.sort_values(by="prediksi_selisih", ascending=False)
+
+                    total_no_plg = df["no_plg"].count()
+                    zone_counts = df.groupby("zona").size().reset_index(name="Jumlah Pelanggan")
+                    subkelompok_counts = df.groupby("subkelompok").size().reset_index(name="Jumlah Pelanggan")
+
+                    top_zona = zone_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
+                    top_sub = subkelompok_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
+
+                    # Bagi menjadi 3 kolom
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.markdown('<div class="card">', unsafe_allow_html=True)
+                        cols = st.columns([1, 3])
+                        with cols[0]:
+                            st.image(icon_people, width=76)
+                        with cols[1]:
+                            st.markdown('<div class="title">Pelanggan Terlambat</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="value">{total_no_plg:,}</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="desc">orang</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    with col2:
+                        st.markdown('<div class="card">', unsafe_allow_html=True)
+                        cols = st.columns([1, 3])
+                        with cols[0]:
+                            st.image(icon_maps, width=76)
+                        with cols[1]:
+                            st.markdown('<div class="title">Zona Terbanyak</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="value">Zona {top_zona["zona"]}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="desc">{top_zona["Jumlah Pelanggan"]:,} pelanggan</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    with col3:
+                        st.markdown('<div class="card">', unsafe_allow_html=True)
+                        cols = st.columns([1, 3])
+                        with cols[0]:
+                            st.image(icon_person, width=76)
+                        with cols[1]:
+                            st.markdown('<div class="title">Subkelompok Terbanyak</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="value">{top_sub["subkelompok"]}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="desc">{top_sub["Jumlah Pelanggan"]:,} orang</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Detail Grafik
+                    st.markdown("### Detail Grafik")
+                    detail_type = st.radio("Pilih tampilan grafik:", ["Zona", "Subkelompok"], horizontal=True)
+
+                    col_grafik, col_analisa = st.columns([3, 2])
+                    with col_grafik:
+                        if detail_type == "Zona":
+                            fig_zone = px.bar(zone_counts, x="zona", y="Jumlah Pelanggan", color="zona",
+                                              title="Jumlah Pelanggan per Zona", template="plotly_white")
+                            st.plotly_chart(fig_zone, use_container_width=True)
+                        else:
+                            fig_sub = px.bar(subkelompok_counts, x="subkelompok", y="Jumlah Pelanggan", color="subkelompok",
+                                             title="Jumlah Pelanggan per Subkelompok", template="plotly_white")
+                            st.plotly_chart(fig_sub, use_container_width=True)
+
+                    with col_analisa:
+                        st.markdown("### Analisis Grafik :")
+                        if detail_type == "Zona":
+                            st.markdown(f"""
+                                Sebanyak **{total_no_plg} pelanggan diprediksi akan mengalami keterlambatan** dalam pembayaran tagihan air. Dari seluruh zona yang dianalisis, **Zona {top_zona['zona']} mencatat jumlah tertinggi** dengan {top_zona['Jumlah Pelanggan']} pelanggan yang diprediksi terlambat. Hal ini menunjukkan bahwa Zona {top_zona['zona']} memiliki tingkat potensi keterlambatan yang paling tinggi dan dapat menjadi prioritas dalam penanganan lebih lanjut.
+                            """)
+                        else :
+                            st.markdown(f"""
+                                Sebanyak **{total_no_plg} pelanggan diprediksi akan mengalami keterlambatan** dalam pembayaran tagihan air. Dari seluruh subkelompok yang dianalisis, **subkelompok {top_sub['subkelompok']} mencatat jumlah tertinggi** dengan {top_sub['Jumlah Pelanggan']} pelanggan yang diprediksi terlambat. Hal ini menunjukkan bahwa subkelompok {top_sub['subkelompok']}1 memiliki tingkat potensi keterlambatan yang paling tinggi dan dapat menjadi prioritas dalam penanganan lebih lanjut.
+                            """)
+
+                    # Tabel Pelanggan
+                    st.markdown("### Detail Daftar Pelanggan Berpotensi Terlambat")
                     df_display = df.copy()
                     df_display.columns = [
                         "Nomor Pelanggan", 
                         "Tahun Bulan", 
-                        "Kode Zona", 
-                        "Kategori Pelanggan", 
-                        "Prediksi Selisih Hari Pembayaran"
+                        "Zona", 
+                        "Subkelompok", 
+                        "Prediksi Hari Keterlambatan"
                     ]
-
                     st.dataframe(df_display, use_container_width=True)
-
-                    # Analisis tetap pakai df asli (kolom asli)
-                    zone_counts = df.groupby("zona").size().reset_index(name="Jumlah Pelanggan")
-                    subkelompok_counts = df.groupby("subkelompok").size().reset_index(name="Jumlah Pelanggan")
-
-                    st.markdown("### Insight Grafik Berdasarkan Zona dan Subkelompok")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        fig_zone = px.bar(zone_counts, x="zona", y="Jumlah Pelanggan", color="zona",
-                                          title="Jumlah Pelanggan per Zona", template="plotly_white")
-                        st.plotly_chart(fig_zone, use_container_width=True)
-
-                    with col2:
-                        fig_sub = px.bar(subkelompok_counts, x="subkelompok", y="Jumlah Pelanggan", color="subkelompok",
-                                         title="Jumlah Pelanggan per Subkelompok", template="plotly_white")
-                        st.plotly_chart(fig_sub, use_container_width=True)
-
-                    if not zone_counts.empty and not subkelompok_counts.empty:
-                        total_no_plg = df["no_plg"].count()
-                        top_zona = zone_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
-                        top_sub = subkelompok_counts.sort_values(by="Jumlah Pelanggan", ascending=False).iloc[0]
-                        st.markdown(f"""
-                        **Analisa untuk {selected_thbl}**
-                        - **{total_no_plg} pelanggan** diprediksi akan **Terlambat**
-                        - Zona yang diprediksi terlambat terbanyak : **Zona {top_zona['zona']}** ({top_zona['Jumlah Pelanggan']} pelanggan)
-                        - Subkelompok yang diprediksi terlambat terbanyak: **{top_sub['subkelompok']}** ({top_sub['Jumlah Pelanggan']} pelanggan)
-                        """)
-
                 else:
-                    st.warning("Tidak ada data prediksi untuk thbl ini.")
+                    st.warning("Tidak ada data prediksi untuk bulan ini.")
             else:
-                st.error("Gagal mengambil data prediksi.")
+                st.error("Gagal mengambil data dari server.")
         else:
-            st.warning("Tidak ada data thbl tersedia.")
+            st.warning("Tidak ada data Tahun-Bulan tersedia.")
+
 
     with tab2:
         def get_prediction(no_plg):
