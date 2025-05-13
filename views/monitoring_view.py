@@ -245,35 +245,38 @@ def show():
                         st.dataframe(updated_df.style.hide(axis="index"), use_container_width=True)
 
                 # Visualisasi jika data ada
-                if not df.empty and all(col in df.columns for col in ["Bulan Tahun", "Selisih Hari", "Prediksi Selisih"]):
-                    avg_df = df.groupby("Bulan Tahun")[["Selisih Hari", "Prediksi Selisih"]].mean().reset_index()
-                    avg_df = avg_df.sort_values("Bulan Tahun")
+                col_grafik, col_analisa = st.columns([2, 2])
+                with col_grafik:
+                    if not df.empty and all(col in df.columns for col in ["Bulan Tahun", "Selisih Hari", "Prediksi Selisih"]):
+                        avg_df = df.groupby("Bulan Tahun")[["Selisih Hari", "Prediksi Selisih"]].mean().reset_index()
+                        avg_df = avg_df.sort_values("Bulan Tahun")
 
-                    # Long format
-                    df_melt = avg_df.melt(id_vars="Bulan Tahun", value_vars=["Selisih Hari", "Prediksi Selisih"],
-                                        var_name="Tipe", value_name="Jumlah Hari")
+                        # Long format
+                        df_melt = avg_df.melt(id_vars="Bulan Tahun", value_vars=["Selisih Hari", "Prediksi Selisih"],
+                                            var_name="Tipe", value_name="Jumlah Hari")
 
-                    fig = px.line(
-                        df_melt,
-                        x="Bulan Tahun",
-                        y="Jumlah Hari",
-                        color="Tipe",
-                        markers=True,
-                        title="📈 Perbandingan Selisih Hari & Prediksi Selisih per Bulan"
-                    )
-                    fig.update_traces(
-                        selector=dict(name="Selisih Hari"),
-                        line=dict(color="blue", dash="solid")
-                    )
-                    fig.update_traces(
-                        selector=dict(name="Prediksi Selisih"),
-                        line=dict(color="red", dash="dot")
-                    )
-                    fig.update_layout(xaxis=dict(type="category"))
-                    st.plotly_chart(fig, use_container_width=True)
+                        fig = px.line(
+                            df_melt,
+                            x="Bulan Tahun",
+                            y="Jumlah Hari",
+                            color="Tipe",
+                            markers=True,
+                            title="📈 Perbandingan Selisih Hari & Prediksi Selisih per Bulan"
+                        )
+                        fig.update_traces(
+                            selector=dict(name="Selisih Hari"),
+                            line=dict(color="blue", dash="solid")
+                        )
+                        fig.update_traces(
+                            selector=dict(name="Prediksi Selisih"),
+                            line=dict(color="red", dash="dot")
+                        )
+                        fig.update_layout(xaxis=dict(type="category"))
+                        st.plotly_chart(fig, use_container_width=True)
+                with col_analisa:
+                    st.markdown("**Analisis Grafik :**")
 
-                    # Analisa keterlambatan pelanggan
-                    if all(col in df.columns for col in ["Nomor Pelanggan", "Status Pembayaran", "Bulan Tahun"]):
+                    if not df.empty and all(col in df.columns for col in ["Nomor Pelanggan", "Status Pembayaran", "Bulan Tahun"]):
                         df_sorted = df.sort_values(by=["Nomor Pelanggan", "Bulan Tahun"])
                         df_sorted["belum_bayar"] = (df_sorted["Status Pembayaran"] == "Belum Dibayar").astype(int)
 
@@ -300,9 +303,18 @@ def show():
                             nilai_prediksi = last_row["Prediksi Selisih"]
                             status_prediksi = "tepat waktu" if nilai_prediksi < 15 else "terlambat"
 
-                            st.markdown("### 🔍 Analisa Pembayaran per Bulan")
-                            st.markdown(f"- Pada bulan selanjutnya, pelanggan diprediksi akan **{status_prediksi}** dalam melakukan pembayaran.")
-                            for nomor, bulan, terakhir in result:
-                                st.markdown(f"- Pelanggan `{nomor}` belum membayar selama **{bulan} bulan berturut-turut**, terakhir pada `{terakhir}`.")
+                            st.markdown(f"""
+                                Berdasarkan hasil prediksi pada bulan terakhir yang tersedia, pelanggan diperkirakan akan melakukan pembayaran secara **{status_prediksi}**. 
+                                Nilai rata-rata prediksi selisih hari mencapai **{nilai_prediksi:.2f} hari**, yang menjadi indikator potensi keterlambatan pembayaran pada bulan berikutnya.
+                            """)
+
+                        if result:
+                            nomor, bulan, bulan_terakhir = result[0]  # Ambil informasi pelanggan pertama (karena hanya 1 pelanggan)
+                            st.markdown(f"""
+                                Pelanggan `{nomor}` belum melakukan pembayaran selama **{bulan} bulan berturut-turut**.
+                            """)
+                        else:
+                            st.markdown("Tidak ditemukan pelanggan yang mengalami keterlambatan pembayaran lebih dari satu bulan secara berturut-turut.")
+
             else:
                 st.error("❌ Data tidak ditemukan atau terjadi kesalahan.")
