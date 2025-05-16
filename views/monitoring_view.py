@@ -137,6 +137,7 @@ def show():
                             "Subkelompok", 
                             "Prediksi Hari Keterlambatan"
                             ]
+                        df_display.index = range(1, len(df_display) + 1) 
                         st.dataframe(df_display, use_container_width=True)
                 else:
                     st.warning("Tidak ada data prediksi untuk bulan ini.")
