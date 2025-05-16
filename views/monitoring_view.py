@@ -128,16 +128,16 @@ def show():
                             """)
 
                     # Tabel Pelanggan
-                    st.markdown("### Detail Daftar Pelanggan Berpotensi Terlambat")
-                    df_display = df.copy()
-                    df_display.columns = [
-                        "Nomor Pelanggan", 
-                        "Tahun Bulan", 
-                        "Zona", 
-                        "Subkelompok", 
-                        "Prediksi Hari Keterlambatan"
-                    ]
-                    st.dataframe(df_display, use_container_width=True)
+                    with st.expander("Lihat Detail Daftar Pelanggan"):
+                        df_display = df.copy()
+                        df_display.columns = [
+                            "Nomor Pelanggan", 
+                            "Tahun Bulan", 
+                            "Zona", 
+                            "Subkelompok", 
+                            "Prediksi Hari Keterlambatan"
+                            ]
+                        st.dataframe(df_display, use_container_width=True)
                 else:
                     st.warning("Tidak ada data prediksi untuk bulan ini.")
             else:

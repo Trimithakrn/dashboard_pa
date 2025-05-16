@@ -121,14 +121,14 @@ def show():
             """)
 
     # Tampilkan tabel
-    st.markdown("### Detail Daftar Pelanggan Belum Bayar")
-    urutan_kolom = ["no_plg", "jumlah_bulan", "subkelompok", "zona"]
-    df = df_belum_bayar[urutan_kolom].copy()
-    df.rename(columns={
-        "no_plg": "Nomor Pelanggan",
-        "jumlah_bulan": "Jumlah Bulan Berturut-turut",
-        "subkelompok": "Subkelompok",
-        "zona": "Zona"
-    }, inplace=True)
-    df = df.sort_values(by="Jumlah Bulan Berturut-turut", ascending=False)
-    st.dataframe(df, use_container_width=True, hide_index=True, height=500)
+    with st.expander("Lihat Detail Daftar Pelanggan Belum Bayar"):
+        urutan_kolom = ["no_plg", "jumlah_bulan", "subkelompok", "zona"]
+        df = df_belum_bayar[urutan_kolom].copy()
+        df.rename(columns={
+            "no_plg": "Nomor Pelanggan",
+            "jumlah_bulan": "Jumlah Bulan Berturut-turut",
+            "subkelompok": "Subkelompok",
+            "zona": "Zona"
+        }, inplace=True)
+        df = df.sort_values(by="Jumlah Bulan Berturut-turut", ascending=False)
+        st.dataframe(df, use_container_width=True, hide_index=True, height=500)
